@@ -1,0 +1,722 @@
+{
+  "name": "My workflow 2",
+  "nodes": [
+    {
+      "parameters": {
+        "trigger": [
+          "app_mention",
+          "message"
+        ],
+        "channelId": {
+          "__rl": true,
+          "value": "C098P2375ML",
+          "mode": "list",
+          "cachedResultName": "social"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.slackTrigger",
+      "typeVersion": 1,
+      "position": [
+        -560,
+        -64
+      ],
+      "id": "fcdb8e4e-24d5-4e45-871d-0478d7c6edb2",
+      "name": "Slack Trigger",
+      "webhookId": "28bcc7b6-55ab-47ad-8c56-e3e534c942f5",
+      "credentials": {
+        "slackApi": {
+          "id": "JAoNV7IRrQiLlSDK",
+          "name": "Slack account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "channel",
+        "operation": "history",
+        "channelId": {
+          "__rl": true,
+          "value": "C098P2375ML",
+          "mode": "list",
+          "cachedResultName": "social"
+        },
+        "limit": 100,
+        "filters": {
+          "oldest": "={{ $now.startOf('day').ts / 1000 }}"
+        }
+      },
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.3,
+      "position": [
+        -384,
+        -64
+      ],
+      "id": "7ab277c0-7745-4045-931c-cf76d84d8552",
+      "name": "Get the history of a channel",
+      "webhookId": "7813352f-8a73-4b33-9446-1327fe56a3bb",
+      "credentials": {
+        "slackApi": {
+          "id": "JAoNV7IRrQiLlSDK",
+          "name": "Slack account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "=You are an expert meeting scheduling assistant. Your reasoning must be precise and accurate. \nTask: \nAnalyze a Slack_style chat history and output structured information for every meeting request or confirmation.\n\nYour instructions are:\n1. Analyze the etire conversion to understand teh context.\n2. Identify the single message where a meeting is scheduled or requested.\n3. Use the timestamp from THAT SPECIFIC MESSAGE as your reference date. For example, if a message's timestamp is [2025-08-05 18:46:17], you must recognize that the reference date is Tuesday, August 5, 2025.\n4. Determine the meeting's duration_minutes. Look for explicit mentions like \"for an hour\" or \"30 minutes\". If no duration is mentioned in the text, you use a default of 40 minutes.\n5. Calculate the absolute meeting date and time based on that reference timestamp. The final time is in ISO 8601 format (e.g., YYYY-MM-DD HH:mm:ss)\n7. Respond with JSON object that matches the required output format. Return valid JSON only – do not wrap it in ```json fences or any extra text.”\n8. Create a concise topic for the meeting title based on the conversion.\n9. Write a brief description summarizing the meeting's purpose and context.\n\n• If no meeting is mentioned, reply ONLY with this valid JSON object:\n{\n  \"meeting_required\": \"false\"\n}\n\n• If one or more meetings are found, reply with multiple available JSON objects for output:\n\n{\n  \"meeting_required\": \"true\",\n  \"meetings\":[\n    {\n      \"start_time\": \"YYYY-MM-DD HH:mm:ss\",\n      \"end_time\": \"YYYY-MM-DD HH:mm:ss\",\n      \"duration\": \"number\",\n      \"topic\": \"<string>\",\n      \"description\":\"<string>\"\n    }\n  /* one object per meeting*/\n  ]\n}\n\nDo NOT wrap the output in a code block (no ```), no extra keys like \"output\", no strings, no explanations. Just return flat, clean JSON!!"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.1,
+      "position": [
+        208,
+        -64
+      ],
+      "id": "d3b33599-4ace-4862-9ff1-d5a2fa9440dc",
+      "name": "AI Agent",
+      "notes": "You are a meeting-planning assistant. You will analyze Slack conversion to determine if a meeting is being planned. Extract the proposed meeting time, the topic of the meeting, and the attendees.\nInstructions:\n- If a meeting is not being planned, respond with \"No meeting planned\".\n- If a meeting is being planned, provide the following details in a JSON format.\n- The 'user' field in the conversation refers to the participant. The 'attendee_me' should be the user who received the DM.\n- The meeting time should be extracted as a full, explicit date and time (e.g., \"August 5th, 2025 at 2:00 PM\").\n- The topic should be a concise summary of what the meeting is about.\n- The attendees should be a list of user IDs who are part of the conversation.\n- The recommendation should be a simple \"yes\" or \"no\".\n\nExample JSON response:\n{\n  \"meetingTime\": \"August 5th, 2025 at 2:00 PM\",\n  \"topic\": \"Project Omega retrospective\",\n  \"attendees\": [\"@U12345678\", \"@U87654321\"],\n  \"attendee_me\": \"@U12345678\",\n  \"recommendation\": \"yes\"\n}"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        64,
+        272
+      ],
+      "id": "e8e8c20c-ef55-4c02-bed9-001f030996c7",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "NfKm190L5gX19kA7",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "topic": "={{ $('Loop Over Items').item.json.topic }}",
+        "additionalFields": {
+          "duration": "={{ $('Loop Over Items').item.json.duration }}",
+          "startTime": "={{ $('Loop Over Items').item.json.start_time }}"
+        }
+      },
+      "type": "n8n-nodes-base.zoom",
+      "typeVersion": 1,
+      "position": [
+        2192,
+        -32
+      ],
+      "id": "459ea6b4-6ec4-43aa-a9e9-b97705b0797a",
+      "name": "Create a meeting",
+      "credentials": {
+        "zoomOAuth2Api": {
+          "id": "ADC2rzrwQJfZd0Jm",
+          "name": "Zoom account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "calendar": {
+          "__rl": true,
+          "value": "ys150@rice.edu",
+          "mode": "list",
+          "cachedResultName": "ys150@rice.edu"
+        },
+        "timeMin": "={{ $json.start_time }}",
+        "timeMax": "={{ $json.end_time }}",
+        "options": {
+          "showDeleted": false
+        }
+      },
+      "type": "n8n-nodes-base.googleCalendar",
+      "typeVersion": 1.3,
+      "position": [
+        1408,
+        -48
+      ],
+      "id": "25121c20-9a27-48fc-93c2-6bc1b771f104",
+      "name": "conflict_event_calendar",
+      "alwaysOutputData": true,
+      "executeOnce": false,
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "iN0zSUrbOV55Z9hv",
+          "name": "Google Calendar account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// Get the string data from the previous node's output field\nconst jsonString = $json.output;\n\n// Parse the string into a real JSON object\nconst parsedData = JSON.parse(jsonString);\n\n// Return the new object with its individual keys\nreturn parsedData;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        592,
+        -64
+      ],
+      "id": "2ec6950f-a8db-46ac-ba0c-b83250df6588",
+      "name": "format"
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\n\n// The .map() function now produces an array of objects.\nconst messages = items.filter((item) => {\n  // Filter out irrelevant \"channel_join\" messages and bots you wish to ignore.\n  return item.json.subtype !== \"channel_join\";\n}).map((item) => {\n  const messageData = item.json;\n\n  // ✨ KEY CHANGE: Determine the role. If a bot_id exists, it's the 'assistant'. Otherwise, it's the 'user'.\n  const role = messageData.bot_id ? 'assistant' : 'user';\n\n  // 1. Get the raw user ID.\n  const rawUserId = messageData.user || messageData.bot_id || 'unknown_user';\n\n  // 2. Format the timestamp.\n  const date = new Date(+messageData.ts * 1000);\n  const ts = date.toISOString().slice(0, 19).replace('T', ' ');\n\n  // 3. Extract and clean the message text (your existing logic is great).\n  let cleanedText = '';\n  if (messageData.blocks && messageData.blocks.length > 0) {\n    for (const block of messageData.blocks) {\n      if (block.type === 'rich_text') {\n        for (const section of block.elements) {\n          if (section.type === 'rich_text_section') {\n            for (const element of section.elements) {\n              if (element.type === 'text') {\n                cleanedText += element.text;\n              } else if (element.type === 'user') {\n                cleanedText += `@${element.user_id}`;\n              } else if (element.type === 'link') {\n                /** @type {any} */\n                const linkElem = element;\n                const linkUrl = linkElem.url;\n                const linkText = linkElem.text || linkUrl;\n                cleanedText += `[${linkText}](${linkUrl})`;\n              }\n            }\n          }\n        }\n      }\n    }\n  } else {\n    cleanedText = messageData.text || '';\n  }\n  cleanedText = cleanedText.replace(/<@([A-Z0-9]+)>/g, (_m, u) => `@${u}`);\n\n  // ✨ KEY CHANGE: Instead of a single string, create a content string.\n  const content = `[${ts}] @${rawUserId}: ${cleanedText.trim()}`;\n  \n  // ✨ KEY CHANGE: Return a structured object for each message.\n  return {\n    role: role,\n    content: content,\n  };\n});\n\n// ✨ KEY CHANGE: Return the array of message objects directly.\nreturn [{ json: { messages: messages } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -192,
+        -64
+      ],
+      "id": "fd173546-6374-45b6-9f40-ce6477efa4bf",
+      "name": "format_1"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "437db920-71fd-46db-9915-01a009f4a47f",
+              "name": "chatInput",
+              "value": "={{$json.messages.map(m => m.content).join('\\n')}}",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        0,
+        -64
+      ],
+      "id": "2a5599c2-e245-4d1f-b6b7-770816ed5c32",
+      "name": "set_role"
+    },
+    {
+      "parameters": {
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "value": "C098P2375ML",
+          "mode": "list",
+          "cachedResultName": "social"
+        },
+        "text": "=Meeting set! \nMeeting Time: {{ $('Loop Over Items').item.json.start_time }}  - {{ $('Loop Over Items').item.json.end_time }}\nTopic: {{ $('Loop Over Items').item.json.topic }}\nDescription: {{ $('Loop Over Items').item.json.description }}",
+        "otherOptions": {}
+      },
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.3,
+      "position": [
+        2848,
+        144
+      ],
+      "id": "abf717b6-2266-4e84-b5cf-9d3dca45e9b1",
+      "name": "send_message_yes",
+      "webhookId": "4cdfbba6-c0ff-449a-8a28-99b07a77e72f",
+      "credentials": {
+        "slackApi": {
+          "id": "JAoNV7IRrQiLlSDK",
+          "name": "Slack account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "calendar": {
+          "__rl": true,
+          "value": "ys150@rice.edu",
+          "mode": "list",
+          "cachedResultName": "ys150@rice.edu"
+        },
+        "start": "={{ $('Loop Over Items').item.json.start_time }}",
+        "end": "={{ $('Loop Over Items').item.json.end_time }}",
+        "additionalFields": {
+          "description": "={{ $json.join_url }}",
+          "id": "={{ $json.id }}"
+        }
+      },
+      "type": "n8n-nodes-base.googleCalendar",
+      "typeVersion": 1.3,
+      "position": [
+        2864,
+        384
+      ],
+      "id": "95f44e5d-6d35-487b-b610-917aa1ba9fe2",
+      "name": "create_meeting_event",
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "iN0zSUrbOV55Z9hv",
+          "name": "Google Calendar account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "value": "C098P2375ML",
+          "mode": "list",
+          "cachedResultName": "social"
+        },
+        "messageType": "block",
+        "blocksUi": "={\n  \"text\": \"Event Conflict Detected! 🚨\",\n  \"blocks\": [\n    {\n      \"type\": \"section\",\n      \"text\": {\n        \"type\": \"mrkdwn\",\n        \"text\": \"*Event Conflict Detected!* 🚨\\n {{ $json.start.dateTime }} to {{ $json.end.dateTime }} with {{ $('Loop Over Items').item.json.topic }} has conflict with an existing event. What would you like to do?\"\n      }\n    },\n    {\n      \"type\": \"actions\",\n      \"elements\": [\n        {\n          \"type\": \"button\",\n          \"text\": {\n            \"type\": \"plain_text\",\n            \"text\": \"Re-write Event 📝\",\n            \"emoji\": true\n          },\n          \"style\": \"primary\",\n          \"action_id\": \"rewrite_event_button\",\n          \"value\": \"{{ $json.id }},{{ $json.start.dateTime }},{{ $json.end.dateTime }}\"\n        },\n        {\n          \"type\": \"button\",\n          \"text\": {\n            \"type\": \"plain_text\",\n            \"text\": \"Dismiss New Meeting 🗑️\",\n            \"emoji\": true\n          },\n          \"style\": \"danger\",\n          \"action_id\": \"dismiss_meeting_button\",\n          \"value\": \"dismiss\"     \n        }\n      ]\n    }\n  ]\n}",
+        "text": "=Sorry! There is a event conflict between the recurring meeting on {{ $json.start.dateTime }} and the exist event - ",
+        "otherOptions": {}
+      },
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.3,
+      "position": [
+        2448,
+        -288
+      ],
+      "id": "fd667c0f-dc56-4092-848f-bae318294705",
+      "name": "send_no_button",
+      "webhookId": "951ff6e8-7654-447a-aa40-2b54eb05a2d6",
+      "credentials": {
+        "slackApi": {
+          "id": "JAoNV7IRrQiLlSDK",
+          "name": "Slack account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "359f642f-e835-424e-ae11-2f666883d0ee",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        1984,
+        -512
+      ],
+      "id": "93866f75-e43c-4acb-8c1f-27b0d374e0ec",
+      "name": "click_response",
+      "webhookId": "359f642f-e835-424e-ae11-2f666883d0ee"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "56be6501-6978-487e-8913-7112a69d564a",
+              "leftValue": "={{ JSON.parse($json.body.payload).actions[0].action_id }}",
+              "rightValue": "rewrite_event_button",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        2272,
+        -512
+      ],
+      "id": "a5f3669a-5cea-4d3e-bcaa-4351246a44fa",
+      "name": "Re-write"
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "operation": "update",
+        "meetingId": "={{ JSON.parse($json.body.payload).actions[0].value.split(',')[0] }}",
+        "updateFields": {
+          "duration": "={{\n  Math.floor(\n    (\n      new Date(\n        JSON.parse($json.body.payload)\n            .actions[0]\n            .value\n            .split(',')[2]\n      )\n      -\n      new Date(\n        JSON.parse($json.body.payload)\n            .actions[0]\n            .value\n            .split(',')[1]\n      )\n    )\n    / 60000\n  )\n}}",
+          "startTime": "={{ JSON.parse($json.body.payload).actions[0].value.split(',')[1] }}"
+        }
+      },
+      "type": "n8n-nodes-base.zoom",
+      "typeVersion": 1,
+      "position": [
+        2528,
+        -528
+      ],
+      "id": "8ac29100-346f-47ac-a4af-33993dd01150",
+      "name": "Update a meeting",
+      "credentials": {
+        "zoomOAuth2Api": {
+          "id": "ADC2rzrwQJfZd0Jm",
+          "name": "Zoom account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "e60e7573-daa9-450d-ad7c-06673fffcd51",
+              "leftValue": "={{ $json.status }}",
+              "rightValue": "confirmed",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1696,
+        -48
+      ],
+      "id": "f8278b0a-bc56-4473-9ad9-e90968f11e76",
+      "name": "If_conflict(multi_meetings)",
+      "executeOnce": false,
+      "alwaysOutputData": false
+    },
+    {
+      "parameters": {
+        "options": {
+          "reset": false
+        }
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        1040,
+        -64
+      ],
+      "id": "8a06d0ba-3624-4bdf-b323-83f6907c2b43",
+      "name": "Loop Over Items"
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "meetings",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        784,
+        -64
+      ],
+      "id": "3147c065-32e2-47e2-9786-35c15a56a601",
+      "name": "Split Out"
+    },
+    {
+      "parameters": {
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "value": "C098P2375ML",
+          "mode": "list",
+          "cachedResultName": "social"
+        },
+        "text": "=New meeting update. From {{ JSON.parse($('Re-write').item.json.body.payload).actions[0].value.split(',')[1] }} to {{ JSON.parse($('Re-write').item.json.body.payload).actions[0].value.split(',')[2] }}",
+        "otherOptions": {}
+      },
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.3,
+      "position": [
+        2752,
+        -528
+      ],
+      "id": "69dc3c43-8eb9-4e4d-80c0-df56ff75c15a",
+      "name": "send_update_message",
+      "webhookId": "1b2875fa-d88b-44da-8540-98c44797769d",
+      "credentials": {
+        "slackApi": {
+          "id": "JAoNV7IRrQiLlSDK",
+          "name": "Slack account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "calendar": {
+          "__rl": true,
+          "value": "ys150@rice.edu",
+          "mode": "list",
+          "cachedResultName": "ys150@rice.edu"
+        },
+        "eventId": "={{ JSON.parse($('Re-write').item.json.body.payload).actions[0].value.split(',')[0] }}",
+        "updateFields": {}
+      },
+      "type": "n8n-nodes-base.googleCalendar",
+      "typeVersion": 1.3,
+      "position": [
+        2768,
+        -304
+      ],
+      "id": "8d4b3442-9c5f-4bba-948e-9dd4261e6eae",
+      "name": "Update an event",
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "iN0zSUrbOV55Z9hv",
+          "name": "Google Calendar account 2"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Slack Trigger": {
+      "main": [
+        [
+          {
+            "node": "Get the history of a channel",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get the history of a channel": {
+      "main": [
+        [
+          {
+            "node": "format_1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "format",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create a meeting": {
+      "main": [
+        [
+          {
+            "node": "create_meeting_event",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "send_message_yes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "conflict_event_calendar": {
+      "main": [
+        [
+          {
+            "node": "If_conflict(multi_meetings)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "format": {
+      "main": [
+        [
+          {
+            "node": "Split Out",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "format_1": {
+      "main": [
+        [
+          {
+            "node": "set_role",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "set_role": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "send_no_button": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "click_response": {
+      "main": [
+        [
+          {
+            "node": "Re-write",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Re-write": {
+      "main": [
+        [
+          {
+            "node": "Update a meeting",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If_conflict(multi_meetings)": {
+      "main": [
+        [
+          {
+            "node": "send_no_button",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Create a meeting",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items": {
+      "main": [
+        [],
+        [
+          {
+            "node": "conflict_event_calendar",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "send_message_yes": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "create_meeting_event": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Out": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update a meeting": {
+      "main": [
+        [
+          {
+            "node": "send_update_message",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Update an event",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "86583836-3f83-4151-8205-575f7e7c41e4",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "834e67be3dc93b4233fe60d574d221ced4654ce23a8ade67957882a625a2236a"
+  },
+  "id": "4H0p8Oxzhc5GjWgX",
+  "tags": []
+}
