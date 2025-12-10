@@ -1,7 +1,7 @@
 # Meeting Scheduling Agent
 
 An intelligent agent that automates meeting scheduling by processing natural language from Slack messages using a Large Language Model (LLM).
-![Alt text](Scheduling Agent workflow.png)
+![Alt text](Scheduling_Agent_workflow.png)
 ***
 ## Overview
 
