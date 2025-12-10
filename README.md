@@ -7,7 +7,7 @@ An intelligent agent that automates meeting scheduling by processing natural lan
 ***
 ## Overview
 
-This project uses **n8n** to create a smart workflow that listens for mentions in a Slack channel. When activated, it reads the conversation, uses the **Google Gemini** LLM to understand requests, and then schedules, updates, or deletes meetings in **Google Calendar**. It is designed to handle scheduling conflicts by asking the user for input through interactive Slack buttons.
+This project uses **n8n** to create a smart workflow that listens for User Messages in a Slack channel. When activated, it reads the conversation (You and your DM/Channels), uses the **Google Gemini** LLM to understand requests, and then schedules, updates, or deletes meetings in **Google Calendar**. It is designed to handle scheduling conflicts by asking the user for input through interactive Slack buttons.
 
 ***
 ## ✨ Features
