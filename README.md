@@ -1,4 +1,4 @@
-# Meeting Scheduling Agent
+# Meeting Schedule Agent
 
 An intelligent agent that automates meeting scheduling by processing natural language from Slack messages using a Large Language Model (LLM).
 <p align="center">
